@@ -1,33 +1,23 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 load_dotenv()
 
 app = FastAPI(title="Neural Consensus Engine API")
 
-# Configure allowed origins based on environment
-allowed_origins = [
-    "http://localhost:5173",  # Vite default port for local development
-]
-
-# Add production domain if specified
-production_url = os.getenv("PRODUCTION_FRONTEND_URL")
-if production_url:
-    allowed_origins.append(production_url)
-
+# Allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/status")
-async def get_status():
-    return {"status": "operational", "service": "Neural Consensus Engine"}
 
 from pydantic import BaseModel
 from backend.core.orchestrator import create_consensus_graph
@@ -42,7 +32,7 @@ class GenerateRequest(BaseModel):
     length: str = "Standard"
     target_audience: str = "General"
     expert_weights: dict[str, float] = {"Creative Expert": 1.0, "Logical Expert": 1.0, "Ethical Expert": 1.0}
-    expert_configs: dict[str, dict] = {} # e.g. {"Creative Expert": {"temperature": 0.9, "instructions": "..."}}
+    expert_configs: dict[str, dict] = {}
 
 class GenerateResponse(BaseModel):
     consensus: str
@@ -56,15 +46,18 @@ class GenerateResponse(BaseModel):
     verified_facts: list[str] = []
     unverified_claims: list[str] = []
 
+@app.get("/status")
+async def get_status():
+    return {"status": "operational", "service": "Neural Consensus Engine"}
+
 @app.post("/generate", response_model=GenerateResponse)
 async def generate_consensus(request: GenerateRequest):
-    print(f"Received request: {request.query} (Tone: {request.tone}, Length: {request.length})")
+    print(f"Received request: {request.query}")
     graph = create_consensus_graph()
     result = await graph.ainvoke({
         "user_query": request.query,
         "context": request.context,
         "output_format": request.output_format,
-        "criteria": request.criteria,
         "criteria": request.criteria,
         "temperature": request.temperature,
         "tone": request.tone,
@@ -86,6 +79,26 @@ async def generate_consensus(request: GenerateRequest):
         verified_facts=result.get("verified_facts", []),
         unverified_claims=result.get("unverified_claims", [])
     )
+
+# Serve frontend static files
+frontend_dist = Path("/app/frontend/dist")
+if frontend_dist.exists():
+    # Mount assets folder
+    if (frontend_dist / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+    
+    # Serve index.html for root
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(str(frontend_dist / "index.html"))
+    
+    # Serve other static files
+    @app.get("/{path:path}")
+    async def serve_static(path: str):
+        file_path = frontend_dist / path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(frontend_dist / "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
