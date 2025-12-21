@@ -7,11 +7,15 @@ load_dotenv()
 
 app = FastAPI(title="Neural Consensus Engine API")
 
-# Allow both local development and production domains
+# Configure allowed origins based on environment
 allowed_origins = [
     "http://localhost:5173",  # Vite default port for local development
-    "https://neural-consensus-engine-290413405638.asia-south1.run.app"  # Production Cloud Run URL
 ]
+
+# Add production domain if specified
+production_url = os.getenv("PRODUCTION_FRONTEND_URL")
+if production_url:
+    allowed_origins.append(production_url)
 
 app.add_middleware(
     CORSMiddleware,

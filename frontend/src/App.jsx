@@ -63,7 +63,7 @@ function App() {
     setLoading(true)
     setResult(null)
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || '';
       const response = await fetch(`${apiBaseUrl}/generate`, {
         method: 'POST',
         headers: {
