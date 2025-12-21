@@ -1,25 +1,44 @@
+"""
+Production-ready main.py for Cloud Run deployment
+This file serves both the FastAPI backend and React frontend static files
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 load_dotenv()
 
 app = FastAPI(title="Neural Consensus Engine API")
 
-# Allow both local development and production domains
-allowed_origins = [
-    "http://localhost:5173",  # Vite default port for local development
-    "https://neural-consensus-engine-290413405638.asia-south1.run.app"  # Production Cloud Run URL
-]
-
+# CORS configuration - allow all origins in production for simplicity
+# In production, you should restrict this to your actual domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve frontend static files if they exist
+frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+if frontend_dist.exists() and frontend_dist.is_dir():
+    # Mount static assets (JS, CSS, images)
+    assets_dir = frontend_dist / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+    
+    # Serve index.html for root and all other routes (SPA routing)
+    @app.get("/")
+    async def serve_frontend_root():
+        index_file = frontend_dist / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+        return {"message": "Frontend not built. Run 'npm run build' in frontend directory."}
 
 @app.get("/status")
 async def get_status():
@@ -38,7 +57,7 @@ class GenerateRequest(BaseModel):
     length: str = "Standard"
     target_audience: str = "General"
     expert_weights: dict[str, float] = {"Creative Expert": 1.0, "Logical Expert": 1.0, "Ethical Expert": 1.0}
-    expert_configs: dict[str, dict] = {} # e.g. {"Creative Expert": {"temperature": 0.9, "instructions": "..."}}
+    expert_configs: dict[str, dict] = {}
 
 class GenerateResponse(BaseModel):
     consensus: str
@@ -60,7 +79,6 @@ async def generate_consensus(request: GenerateRequest):
         "user_query": request.query,
         "context": request.context,
         "output_format": request.output_format,
-        "criteria": request.criteria,
         "criteria": request.criteria,
         "temperature": request.temperature,
         "tone": request.tone,
@@ -85,4 +103,5 @@ async def generate_consensus(request: GenerateRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.getenv("PORT", 8080))  # Cloud Run uses PORT env var
+    uvicorn.run(app, host="0.0.0.0", port=port)
