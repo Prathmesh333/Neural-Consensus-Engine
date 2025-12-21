@@ -46,6 +46,7 @@ class GenerateResponse(BaseModel):
     verified_facts: list[str] = []
     unverified_claims: list[str] = []
 
+# API routes must come BEFORE static file serving
 @app.get("/status")
 async def get_status():
     return {"status": "operational", "service": "Neural Consensus Engine"}
@@ -81,7 +82,10 @@ async def generate_consensus(request: GenerateRequest):
     )
 
 # Serve frontend static files
-frontend_dist = Path("/app/frontend/dist")
+# Check both container path (/app/frontend/dist) and local dev path
+container_path = Path("/app/frontend/dist")
+local_path = Path(__file__).parent.parent / "frontend" / "dist"
+frontend_dist = container_path if container_path.exists() else local_path
 if frontend_dist.exists():
     # Mount assets folder
     if (frontend_dist / "assets").exists():
@@ -92,12 +96,19 @@ if frontend_dist.exists():
     async def serve_root():
         return FileResponse(str(frontend_dist / "index.html"))
     
-    # Serve other static files
+    # Serve other static files and SPA routes (but not API routes)
     @app.get("/{path:path}")
     async def serve_static(path: str):
+        # Skip API routes
+        if path.startswith("generate") or path.startswith("status"):
+            return {"detail": "Not Found"}
+
+        # Check if it's a static file
         file_path = frontend_dist / path
         if file_path.is_file():
             return FileResponse(str(file_path))
+
+        # For all other routes, serve index.html (SPA routing)
         return FileResponse(str(frontend_dist / "index.html"))
 
 if __name__ == "__main__":
