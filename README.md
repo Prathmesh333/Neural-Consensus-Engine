@@ -1,6 +1,5 @@
-Unable to forward localhost:5173. spawn c:\Users\chu\AppData\Local\Programs\Antigravity\bin\code-tunnel.exe ENOENT# Neural Consensus Engine
 
-An advanced "Cognitive Debugger" and Mixture-of-Experts (MoE) system powered by Google Gemini 1.5 Flash. This application orchestrates multiple specialized AI agents (Creative, Logical, Ethical) to deliberate on complex queries and synthesize a robust consensus.
+An advanced Mixture-of-Experts (MoE) system powered by Google Gemini 1.5 Flash. This application orchestrates multiple specialized AI agents (Creative, Logical, Ethical) to deliberate on complex queries and synthesize a robust consensus.
 
 ## Features
 
