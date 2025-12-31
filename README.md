@@ -1,6 +1,5 @@
-### <img width="3200" height="800" alt="image" src="https://github.com/user-attachments/assets/feaacb2c-8f20-4df7-95b7-f2257142c5cb" />
-
-
+## Developed for GDG Hyderabad Agentathon 2025
+## Idea Presented in: <img width="3200" height="800" alt="GDG Agentathon Banner" src="https://github.com/user-attachments/assets/feaacb2c-8f20-4df7-95b7-f2257142c5cb" />
 
 An advanced Mixture-of-Experts (MoE) system powered by Google Gemini 1.5 Flash. This application orchestrates multiple specialized AI agents (Creative, Logical, Ethical) to deliberate on complex queries and synthesize a robust consensus.
 
